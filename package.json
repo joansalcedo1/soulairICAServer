@@ -9,7 +9,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
   "dependencies": {
     "firebase-admin": "^13.2.0"
   }
