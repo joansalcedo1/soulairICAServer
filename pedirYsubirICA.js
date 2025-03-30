@@ -3,7 +3,7 @@ const axios = require("axios");
 const cron = require("node-cron");
 
 // 🔹 Configurar Firebase
-const serviceAccount = require("./firebase-key.json");
+const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
