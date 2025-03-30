@@ -4,7 +4,7 @@
   "main": "pedirYsubirICA.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "pedirYsubirICA.js"
+    "start": "node pedirYsubirICA.js"
   },
   "keywords": [],
   "author": "",
