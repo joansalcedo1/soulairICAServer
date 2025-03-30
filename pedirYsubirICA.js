@@ -36,7 +36,7 @@ async function updateICA() {
     console.error("❌ Error al obtener el ICA:", error);
   }
 }
-
+updateICA();
 // 🔹 Ejecutar cada 15 minutos
 cron.schedule("*/15 * * * *", () => {
   console.log("⏳ Actualizando ICA...");
