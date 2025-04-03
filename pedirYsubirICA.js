@@ -1,50 +1,67 @@
 const admin = require("firebase-admin");
 const axios = require("axios");
 const cron = require("node-cron");
+const express = require("express");
 
-// 🔹 Configurar Firebase
-const serviceAccount = JSON.parse(process.env.FIREBASE_KEY);
+// Configurar Firebase
+const serviceAccount = JSON.parse(process.env.FIREBASE_KEY); // Asegúrate de configurar esto en Render
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 const db = admin.firestore();
 
-// 🔹 Configurar API de AQICN
-const CITY = "cali";
-const API_KEY = "4dbc5b687587df72e35cbb96a11571bddcea856f"; // Reemplázalo con tu API Key
-const AQI_URL = `https://api.waqi.info/feed/@13323/?token=${API_KEY}`;
+// Configurar API de AQICN
+const API_KEY = process.env.API_KEY; // Agregar la clave como variable de entorno
+const SENSORS = {
+  pance: `https://api.waqi.info/feed/@13323/?token=${API_KEY}`,  // ID del sensor en Pance
+  univalle: `https://api.waqi.info/feed/@13326/?token=${API_KEY}` // ID del sensor en Univalle 
+};
 
-// 🔹 Función para obtener datos del ICA
-async function updateICA() {
+//  Función para obtener y guardar datos de AQI
+async function updateICA(location, url) {
   try {
-    const response = await axios.get(AQI_URL);
+    const response = await axios.get(url);
     if (response.data.status === "ok") {
-      const aqiValue = response.data.data.aqi;
-      console.log(`Nuevo ICA: ${aqiValue}`);
+      const data = response.data.data;
+      const aqiValue = data.aqi;
+      const latitude = data.city.geo[0];
+      const longitude = data.city.geo[1];
+      const sensorName = data.city.name;
 
-      // 🔹 Guardar en Firestore
-      await db.collection("ICA").doc(CITY).set({
-        value: aqiValue,
+      console.log(`📍 ${location.toUpperCase()}: ICA ${aqiValue}, Lat: ${latitude}, Lon: ${longitude}`);
+
+      // Guardar en Firestore sin sobrescribir
+      await db.collection("ICA").doc(location).collection("registros").add({
+        aqi: aqiValue,
+        latitude: latitude,
+        longitude: longitude,
+        sensor: sensorName,
         timestamp: admin.firestore.Timestamp.now(),
       });
 
-      console.log("📌 ICA actualizado en Firestore.");
+      console.log(`✅ Datos guardados en Firestore para ${location}`);
     } else {
-      console.error("❌ Error en la respuesta de la API.");
+      console.error(`❌ Error en la respuesta de la API para ${location}`);
     }
   } catch (error) {
-    console.error("❌ Error al obtener el ICA:", error);
+    console.error(`❌ Error al obtener el ICA de ${location}:`, error);
   }
 }
-updateICA();
-// 🔹 Ejecutar cada 15 minutos
-cron.schedule("*/15 * * * *", () => {
-  console.log("⏳ Actualizando ICA...");
-  updateICA();
-});
 
-// 🔹 Iniciar el servidor (necesario para Render o Railway)
-const express = require("express");
+// 🔹 Función para actualizar ambos sensores
+async function updateAllSensors() {
+  console.log("⏳ Actualizando datos de ICA...");
+  await updateICA("pance", SENSORS.pance);
+  await updateICA("univalle", SENSORS.univalle);
+}
+
+// 🔹 Ejecutar cada 15 minutos
+cron.schedule("*/15 * * * *", updateAllSensors);
+
+// 🔹 Iniciar el servidor (para Render)
 const app = express();
 app.get("/", (req, res) => res.send("Servidor ICA corriendo"));
 app.listen(3000, () => console.log("🚀 Servidor en puerto 3000"));
+
+// 🔹 Primera ejecución al iniciar
+updateAllSensors();
