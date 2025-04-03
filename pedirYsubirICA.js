@@ -31,7 +31,7 @@ async function updateICA(location, url) {
       console.log(`📍 ${location.toUpperCase()}: ICA ${aqiValue}, Lat: ${latitude}, Lon: ${longitude}`);
 
       // Guardar en Firestore sin sobrescribir
-      await db.collection("ICA").doc(location).collection("registros").add({
+      await db.collection("ICA").doc(sensorName).collection("registros").add({
         aqi: aqiValue,
         latitude: latitude,
         longitude: longitude,
